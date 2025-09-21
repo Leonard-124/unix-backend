@@ -1,5 +1,9 @@
 
 {
-  "build": "cd Backend && npm install",
-  "start": "cd Backend && npm start"
+  "build": {
+    "command": "cd Backend && npm install"
+  },
+  "start": {
+    "command": "cd Backend && npm start"
+  }
 }
