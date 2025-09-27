@@ -11,7 +11,7 @@ const checkJwt = auth({
   tokenSigningAlg: "RS256"
 });
 
-router.post("/sync", checkJwt, createOrUpdateUser);
-router.get("/profile", checkJwt, getUserProfile);
+router.post("/users", checkJwt, createOrUpdateUser); // sync
+router.get("/users/:auth0Id", checkJwt, getUserProfile); // profile
 
 export default router;
