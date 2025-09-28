@@ -15,7 +15,7 @@ router.post("/", async (req, res) => {
       host: "smtp.gmail.com",
       port: 587,
       secure: false, // STARTTLS
-      requireTLS: true
+      requireTLS: true,
       auth: {
         user: process.env.EMAIL_USER, // your Gmail address
         pass: process.env.EMAIL_PASS, // your Gmail App Password
