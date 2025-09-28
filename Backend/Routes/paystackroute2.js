@@ -99,13 +99,13 @@ const paymentData = verifyRes.data.data;
 
 if (paymentData.status === 'success') {
 console.log('✅ Payment verified on callback:', paymentData);
-return res.redirect(`http://localhost:5173/success?reference=${reference}`);
+return res.redirect(`https://unix-delta.vercel.app/success?reference=${reference}`);
 } else {
-return res.redirect(`http://localhost:5173/payment-failed?reference=${reference}`);
+return res.redirect(`https://unix-delta.vercel.app/payment-failed?reference=${reference}`);
 }
 } catch (err) {
 console.error('Callback error:', err.message);
-return res.redirect('http://localhost:5173/payment-failed');
+return res.redirect('https://unix-delta.vercel.app/payment-failed');
 }
 });
 
