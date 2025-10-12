@@ -1,9 +1,13 @@
 
-// import Art from "../Models/Art.js";
+
+
+// import Art from "../Models/artModel.js";
 // import cloudinary from "../config/cloudinary.js";
 
-// // POST: Upload image to Cloudinary + save metadata to MongoDB
+// // CREATE
 // export const createArt = async (req, res) => {
+//   console.log("req.file:", req.file);
+// console.log("req.body:", req.body);
 //   try {
 //     if (!req.file) return res.status(400).json({ error: "Image file is required" });
 
@@ -12,14 +16,29 @@
 //       folder: "artworks",
 //     });
 
-//     // Save to MongoDB
+//     const {
+//       name,
+//       personType,
+//       personName,
+//       size,
+//       weight,
+//       type,
+//       description,
+//       price,
+//     } = req.body;
+
 //     const newArt = new Art({
-//       src: uploadResult.secure_url,
-//       name: req.body.name,
-//       author: req.body.author,
-//       size: req.body.size,
-//       description: req.body.description,
-//       price: req.body.price,
+//       image: uploadResult.secure_url,
+//       publicId: uploadResult.public_id, // store public_id for deletion
+//       name,
+//       author: personType === "author" ? personName : undefined,
+//       inventor: personType === "inventor" ? personName : undefined,
+//       size,
+//       weight,
+//       type,
+//       description,
+//       price,
+//       auth0Id: req.user.sub, // only if using authentication
 //     });
 
 //     const savedArt = await newArt.save();
@@ -29,7 +48,7 @@
 //   }
 // };
 
-// // GET: Fetch all artworks
+// // READ ALL
 // export const getAllArt = async (req, res) => {
 //   try {
 //     const artworks = await Art.find().sort({ createdAt: -1 });
@@ -38,8 +57,112 @@
 //     res.status(500).json({ error: err.message });
 //   }
 // };
-///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+// // READ ONE
+// export const getArtById = async (req, res) => {
+//   try {
+//     const art = await Art.findById(req.params.id);
+//     if (!art) return res.status(404).json({ error: "Not found" });
+//     res.json(art);
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// };
+
+// // UPDATE
+// export const updateArt = async (req, res) => {
+//   try {
+//     const {
+//       name,
+//       personType,
+//       personName,
+//       size,
+//       weight,
+//       type,
+//       description,
+//       price,
+//     } = req.body;
+
+//     const updates = { name, size, weight, type, description, price };
+
+//     // If new image uploaded, replace old one
+//     if (req.file) {
+//       const art = await Art.findById(req.params.id);
+//       if (!art) return res.status(404).json({ error: "Not found" });
+
+//       // Delete old image from Cloudinary
+//       if (art.publicId) {
+//         await cloudinary.uploader.destroy(art.publicId);
+//       }
+
+//       // Upload new image
+//       const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+//         folder: "artworks",
+//       });
+//       updates.src = uploadResult.secure_url;
+//       updates.publicId = uploadResult.public_id;
+//     }
+
+//     if (personType === "author") {
+//       updates.author = personName;
+//       updates.inventor = undefined;
+//     } else if (personType === "inventor") {
+//       updates.inventor = personName;
+//       updates.author = undefined;
+//     }
+
+//     const art = await Art.findByIdAndUpdate(req.params.id, updates, {
+//       new: true,
+//       runValidators: true,
+//     });
+
+//     if (!art) return res.status(404).json({ error: "Not found" });
+//     res.json(art);
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// };
+
+// // DELETE
+// export const deleteArt = async (req, res) => {
+//   try {
+//     const art = await Art.findById(req.params.id);
+//     if (!art) return res.status(404).json({ error: "Not found" });
+
+//     // Delete image from Cloudinary
+//     if (art.publicId) {
+//       await cloudinary.uploader.destroy(art.publicId);
+//     }
+
+//     await art.deleteOne();
+//     res.json({ message: "Deleted successfully" });
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// };
+// ////////////////////////////////////////////////////////////////
+
+
+// export const getUserArtworks = async (req, res) => {
+// console.log("req.auth.sub:", req.auth.sub);
+// console.log("req.params.auth0Id:", req.params.auth0Id);
+//   try {
+//     const { auth0Id } = req.params;
+
+//     // The middleware puts the claims in req.auth
+//     if (req.auth.sub !== auth0Id) {
+//       return res.status(403).json({ message: "Forbidden: not your profile" });
+//     }
+
+//     const artworks = await Art.find({ auth0Id });
+//     res.status(200).json(artworks);
+//   } catch (err) {
+//     console.error("Error fetching user artworks:", err);
+//     res.status(500).json({ message: "Server error fetching user artworks" });
+//   }
+// };
+
+/////////////////////////////////////////////////////////////////////
 
 import Art from "../Models/artModel.js";
 import cloudinary from "../config/cloudinary.js";
@@ -47,9 +170,12 @@ import cloudinary from "../config/cloudinary.js";
 // CREATE
 export const createArt = async (req, res) => {
   console.log("req.file:", req.file);
-console.log("req.body:", req.body);
+  console.log("req.body:", req.body);
+
   try {
-    if (!req.file) return res.status(400).json({ error: "Image file is required" });
+    if (!req.file) {
+      return res.status(400).json({ error: "Image file is required" });
+    }
 
     // Upload to Cloudinary
     const uploadResult = await cloudinary.uploader.upload(req.file.path, {
@@ -67,6 +193,12 @@ console.log("req.body:", req.body);
       price,
     } = req.body;
 
+    // ✅ Use req.auth.sub (set by express-oauth2-jwt-bearer)
+    const auth0Id = req.auth?.sub;
+    if (!auth0Id) {
+      return res.status(401).json({ error: "Unauthorized: no auth0Id" });
+    }
+
     const newArt = new Art({
       image: uploadResult.secure_url,
       publicId: uploadResult.public_id, // store public_id for deletion
@@ -78,11 +210,13 @@ console.log("req.body:", req.body);
       type,
       description,
       price,
+      auth0Id, // ✅ store owner’s Auth0 ID
     });
 
     const savedArt = await newArt.save();
     res.status(201).json(savedArt);
   } catch (err) {
+    console.error("Error creating art:", err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -138,7 +272,7 @@ export const updateArt = async (req, res) => {
       const uploadResult = await cloudinary.uploader.upload(req.file.path, {
         folder: "artworks",
       });
-      updates.src = uploadResult.secure_url;
+      updates.image = uploadResult.secure_url; // ✅ fix: use image
       updates.publicId = uploadResult.public_id;
     }
 
@@ -179,160 +313,26 @@ export const deleteArt = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-////////////////////////////////////////////////////////////////
 
-// import Art from "../Models/artModel.js";
-// import cloudinary from "../config/cloudinary.js";
+// READ USER’S ARTWORKS
+export const getUserArtworks = async (req, res) => {
+  console.log("req.auth.sub:", req.auth?.sub);
+  console.log("req.params.auth0Id:", req.params.auth0Id);
 
-// /**
-//  * CREATE
-//  * Uploads image to Cloudinary and saves metadata to MongoDB
-//  */
-// export const createArt = async (req, res) => {
-//   try {
-//     if (!req.file) {
-//       return res.status(400).json({ error: "Image file is required" });
-//     }
+  try {
+    const { auth0Id } = req.params;
 
-//     // Upload to Cloudinary
-//     const uploadResult = await cloudinary.uploader.upload(req.file.path, {
-//       folder: "artworks",
-//     });
+    // ✅ enforce ownership
+    if (req.auth?.sub !== auth0Id) {
+      return res.status(403).json({ message: "Forbidden: not your profile" });
+    }
 
-//     const {
-//       name,
-//       personType,
-//       personName,
-//       size,
-//       weight,
-//       type,
-//       description,
-//       price,
-//     } = req.body;
+    const artworks = await Art.find({ auth0Id });
+    res.status(200).json(artworks);
+  } catch (err) {
+    console.error("Error fetching user artworks:", err);
+    res.status(500).json({ message: "Server error fetching user artworks" });
+  }
+};
 
-//     const newArt = new Art({
-//       image: uploadResult.secure_url,     // ✅ matches schema
-//       publicId: uploadResult.public_id,   // ✅ matches schema
-//       name,
-//       author: personType === "author" ? personName : undefined,
-//       inventor: personType === "inventor" ? personName : undefined,
-//       size,
-//       weight,
-//       type,
-//       description,
-//       price,
-//     });
 
-//     const savedArt = await newArt.save();
-//     res.status(201).json(savedArt);
-//   } catch (err) {
-//     console.error("Error creating art:", err);
-//     res.status(500).json({ error: err.message });
-//   }
-// };
-
-// /**
-//  * READ ALL
-//  */
-// export const getAllArt = async (req, res) => {
-//   try {
-//     const artworks = await Art.find().sort({ createdAt: -1 });
-//     res.json(artworks);
-//   } catch (err) {
-//     res.status(500).json({ error: err.message });
-//   }
-// };
-
-// /**
-//  * READ ONE
-//  */
-// export const getArtById = async (req, res) => {
-//   try {
-//     const art = await Art.findById(req.params.id);
-//     if (!art) return res.status(404).json({ error: "Not found" });
-//     res.json(art);
-//   } catch (err) {
-//     res.status(500).json({ error: err.message });
-//   }
-// };
-
-// /**
-//  * UPDATE
-//  * If a new image is uploaded, replaces the old one in Cloudinary
-//  */
-// export const updateArt = async (req, res) => {
-//   try {
-//     const {
-//       name,
-//       personType,
-//       personName,
-//       size,
-//       weight,
-//       type,
-//       description,
-//       price,
-//     } = req.body;
-
-//     const updates = { name, size, weight, type, description, price };
-
-//     // If new image uploaded, replace old one
-//     if (req.file) {
-//       const art = await Art.findById(req.params.id);
-//       if (!art) return res.status(404).json({ error: "Not found" });
-
-//       // Delete old image from Cloudinary
-//       if (art.publicId) {
-//         await cloudinary.uploader.destroy(art.publicId);
-//       }
-
-//       // Upload new image
-//       const uploadResult = await cloudinary.uploader.upload(req.file.path, {
-//         folder: "artworks",
-//       });
-//       updates.image = uploadResult.secure_url;   // ✅ matches schema
-//       updates.publicId = uploadResult.public_id; // ✅ matches schema
-//     }
-
-//     if (personType === "author") {
-//       updates.author = personName;
-//       updates.inventor = undefined;
-//     } else if (personType === "inventor") {
-//       updates.inventor = personName;
-//       updates.author = undefined;
-//     }
-
-//     const art = await Art.findByIdAndUpdate(req.params.id, updates, {
-//       new: true,
-//       runValidators: true,
-//     });
-
-//     if (!art) return res.status(404).json({ error: "Not found" });
-//     res.json(art);
-//   } catch (err) {
-//     console.error("Error updating art:", err);
-//     res.status(500).json({ error: err.message });
-//   }
-// };
-
-// /**
-//  * DELETE
-//  * Removes artwork from DB and deletes image from Cloudinary
-//  */
-// export const deleteArt = async (req, res) => {
-//   try {
-//     const art = await Art.findById(req.params.id);
-//     if (!art) return res.status(404).json({ error: "Not found" });
-
-//     // Delete image from Cloudinary
-//     if (art.publicId) {
-//       await cloudinary.uploader.destroy(art.publicId);
-//     }
-
-//     await art.deleteOne();
-//     res.json({ message: "Deleted successfully" });
-//   } catch (err) {
-//     console.error("Error deleting art:", err);
-//     res.status(500).json({ error: err.message });
-//   }
-// };
-// ///////////////////////////////////////////////////////////

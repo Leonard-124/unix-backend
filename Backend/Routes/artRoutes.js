@@ -14,13 +14,16 @@
 
 import express from "express";
 import multer from "multer";
+import checkJwt from "../Middlewares/checkJwt.js";
 import {
   createArt,
   getAllArt,
   getArtById,
   updateArt,
   deleteArt,
+  getUserArtworks
 } from "../controllers/artController.js";
+
 
 const router = express.Router();
 
@@ -28,7 +31,7 @@ const router = express.Router();
 const upload = multer({ dest: "uploads/" });
 
 // CREATE (with image upload)
-router.post("/", upload.single("image"), createArt);
+router.post("/", checkJwt, upload.single("image"), createArt);
 
 // READ all
 router.get("/", getAllArt);
@@ -37,13 +40,16 @@ router.get("/", getAllArt);
 router.get("/:id", getArtById);
 
 // UPDATE (full replacement)
-router.put("/:id", upload.single("image"), updateArt);
+router.put("/:id", checkJwt, upload.single("image"), updateArt);//checkwt
 
 // UPDATE (partial update)
-router.patch("/:id", upload.single("image"), updateArt);
+router.patch("/:id", checkJwt, upload.single("image"), updateArt);//checkwt
 
 // DELETE
-router.delete("/:id", deleteArt);
+router.delete("/:id", checkJwt, deleteArt);//checkwt
+
+router.get("/user/:auth0Id", checkJwt, getUserArtworks);
+
 
 export default router;
 ////////////////////////////////////////////////////

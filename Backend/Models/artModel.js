@@ -39,6 +39,7 @@ const artSchema = new mongoose.Schema(
     type: { type: String },
     description: { type: String },
     price: { type: String },
+     auth0Id: { type: String, required: true }
   },
   { timestamps: true }
 );
