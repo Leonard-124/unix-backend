@@ -287,7 +287,7 @@ router.get('/callback', async (req, res) => {
     const { reference } = req.query;
 
     if (!reference) {
-      return res.redirect(`${process.env.LOCAL_URL || 'http://localhost:5173'}/failure`);
+      return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/failure`);
     }
 
     const verifyRes = await axios.get(
@@ -346,13 +346,13 @@ router.get('/callback', async (req, res) => {
         }
       }
 
-      return res.redirect(`${process.env.LOCAL_URL || 'http://localhost:5173'}/success?reference=${reference}`);
+      return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/success?reference=${reference}`);
     } else {
-      return res.redirect(`${process.env.LOCAL_URL || 'http://localhost:5173'}/failure?reference=${reference}`);
+      return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/failure?reference=${reference}`);
     }
   } catch (err) {
     console.error('Callback error:', err.message);
-    return res.redirect(`${process.env.LOCAL_URL || 'http://localhost:5173'}/failure`);
+    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/failure`);
   }
 });
 
