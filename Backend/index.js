@@ -225,13 +225,14 @@
 // start();
 ////////////////////////////////////////////////////////////////////////////////
 
-
+// index.js (or keep as server.js)
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import morgan from "morgan";
-import { connectDB } from "./Database/db.js";
+import serverless from "serverless-http";
 
+import { connectDB } from "./Database/db.js";
 import paystackRouter from "./Routes/paystackroute2.js";
 import artRoutes from "./Routes/artRoutes.js";
 import userRoutes from "./Routes/userRoutes.js";
@@ -243,44 +244,33 @@ dotenv.config();
 
 const app = express();
 
-// Allowed origins from env
+// Collect allowed origins from env
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   process.env.LOCAL_URL,
   process.env.ALT_LOCAL_URL,
 ].filter(Boolean);
 
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true); // allow Postman/curl
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    console.warn("❌ Blocked by CORS:", origin);
-    return callback(new Error("Not allowed by CORS"));
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-};
-
-// Apply CORS before routes
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
-
-// Debug incoming origins
-app.use((req, res, next) => {
-  console.log("🌍 Incoming Origin:", req.headers.origin);
-  console.log("✅ Allowed Origins:", allowedOrigins);
-  next();
-});
+// CORS for Express
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  })
+);
 
 app.use(express.json());
 app.use(morgan("dev"));
 
 // Health check
 app.get("/", (req, res) => {
-  res.send("Welcome to Unix guys (CORS fixed)");
+  res.send("Welcome to Unix guys (serverless mode)");
 });
 
 // Routes
@@ -291,19 +281,8 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/feedback", feedbackRoute);
 app.use("/api/messages", messageRoutes);
 
-const PORT = process.env.PORT || 3000;
+// Connect DB once before exporting handler
+await connectDB();
 
-async function start() {
-  try {
-    await connectDB();
-    app.listen(PORT, () => {
-      console.log(`✅ Server running on http://localhost:${PORT}`);
-      console.log("✅ Allowed origins:", allowedOrigins);
-    });
-  } catch (err) {
-    console.error("❌ Failed to start server:", err);
-    process.exit(1);
-  }
-}
-
-start();
+// Export as serverless handler (no app.listen)
+export const handler = serverless(app);
