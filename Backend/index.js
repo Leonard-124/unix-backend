@@ -224,7 +224,6 @@
 
 // start();
 ////////////////////////////////////////////////////////////////////////////////
-
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -257,7 +256,7 @@ const corsOptions = {
       return callback(null, true);
     }
     console.warn("❌ Blocked by CORS:", origin);
-    return callback(new Error("Not allowed by CORS"));
+    return callback(null, false);
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
@@ -280,10 +279,10 @@ app.use((req, res, next) => {
 
 // Health check
 app.get("/", (req, res) => {
-  res.send("Welcome to Unix guys (serverless mode)");
+  res.send("Welcome to Unix guys (serverless mode, safe from path-to-regexp)");
 });
 
-// Routes
+// ✅ Always mount routers with relative paths only
 app.use("/api/art", artRoutes);
 app.use("/api/payments/paystack", paystackRouter);
 app.use("/api/users", userRoutes);
