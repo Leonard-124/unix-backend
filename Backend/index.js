@@ -231,8 +231,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import morgan from "morgan";
 import serverless from "serverless-http";
-
 import { connectDB } from "./Database/db.js";
+
 import paystackRouter from "./Routes/paystackroute2.js";
 import artRoutes from "./Routes/artRoutes.js";
 import userRoutes from "./Routes/userRoutes.js";
@@ -244,29 +244,40 @@ dotenv.config();
 
 const app = express();
 
-// Collect allowed origins from env
+// Allowed origins
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   process.env.LOCAL_URL,
   process.env.ALT_LOCAL_URL,
 ].filter(Boolean);
 
-// CORS for Express
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-      return callback(new Error("Not allowed by CORS"));
-    },
-    credentials: true,
-  })
-);
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true); // allow Postman/curl
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    console.warn("❌ Blocked by CORS:", origin);
+    return callback(null, false);
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+// Apply CORS before routes
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 app.use(express.json());
 app.use(morgan("dev"));
+
+// Debug incoming origins
+app.use((req, res, next) => {
+  console.log("🌍 Incoming Origin:", req.headers.origin);
+  console.log("✅ Allowed Origins:", allowedOrigins);
+  next();
+});
 
 // Health check
 app.get("/", (req, res) => {
@@ -284,5 +295,5 @@ app.use("/api/messages", messageRoutes);
 // Connect DB once before exporting handler
 await connectDB();
 
-// Export as serverless handler (no app.listen)
+// Export as serverless handler
 export const handler = serverless(app);
