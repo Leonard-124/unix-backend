@@ -1,74 +1,78 @@
 
-// import express from "express";
-// import cors from "cors";
-// import dotenv from "dotenv";
-// import morgan from "morgan";
-// import { connectDB } from "./Database/db.js";
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import morgan from "morgan";
+//import { createServer } from "http";
+import { Server } from "socket.io";
+import { connectDB } from "./Database/db.js";
 
-// import paystackRouter from "./Routes/paystackroute2.js";
-// import artRoutes from "./Routes/artRoutes.js";
-// import userRoutes from "./Routes/userRoutes.js";
-// import paymentRoutes from "./Routes/payments.js";
-// import feedbackRoute from "./Routes/feedbackroute.js";
+import paystackRouter from "./Routes/paystackroute2.js";
+import artRoutes from "./Routes/artRoutes.js";
+import userRoutes from "./Routes/userRoutes.js";
+import orderRoutes from "./Routes/orderRoutes.js";
+import feedbackRoute from "./Routes/feedbackroute.js";
+import messageRoutes from "./Routes/messageRoute.js"; // ADD THIS
 
-// dotenv.config();
+dotenv.config();
 
-// const app = express();
+const app = express();
 
-// // Collect allowed origins from env
-// const allowedOrigins = [
-//   process.env.FRONTEND_URL,
-//   process.env.LOCAL_URL,
-//   process.env.ALT_LOCAL_URL,
-// ].filter(Boolean); // removes undefined
+// Collect allowed origins from env
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  process.env.LOCAL_URL,
+  process.env.ALT_LOCAL_URL,
+].filter(Boolean); // removes undefined
 
-// app.use(
-//   cors({
-//     origin: function (origin, callback) {
-//       // allow requests with no origin (like curl, Postman)
-//       if (!origin) return callback(null, true);
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // allow requests with no origin (like curl, Postman)
+      if (!origin) return callback(null, true);
 
-//       if (allowedOrigins.includes(origin)) {
-//         return callback(null, true);
-//       }
-//       return callback(new Error("Not allowed by CORS"));
-//     },
-//     credentials: true,
-//   })
-// );
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  })
+);
 
-// app.use(express.json());
-// app.use(morgan("dev"));
+app.use(express.json());
+app.use(morgan("dev"));
 
-// // Health check
-// app.get("/", (req, res) => {
-//   res.send("Welcome to Unix guys");
-// });
+// Health check
+app.get("/", (req, res) => {
+  res.send("Welcome to Unix guys");
+});
 
-// // Routes
-// app.use("/api/art", artRoutes);
-// app.use("/api/payments/paystack", paystackRouter);
-// app.use("/api/users", userRoutes);
-// app.use("/api", paymentRoutes);
-// app.use("/api/feedback", feedbackRoute);
+// Routes
+app.use("/api/art", artRoutes);
+app.use("/api/payments/paystack", paystackRouter);
+app.use("/api/users", userRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/feedback", feedbackRoute);
+app.use("/api/messages", messageRoutes); // ADD THIS
 
-// // Server start
-// const PORT = process.env.PORT || 3000;
+// Server start
+const PORT = process.env.PORT || 3000;
 
-// async function start() {
-//   try {
-//     await connectDB();
-//     app.listen(PORT, () => {
-//       console.log(`✅ Server is running on http://localhost:${PORT}`);
-//       console.log("Allowed origins:", allowedOrigins);
-//     });
-//   } catch (err) {
-//     console.error("❌ Failed to start server:", err);
-//     process.exit(1);
-//   }
-// }
+async function start() {
+  try {
+    await connectDB();
+    app.listen(PORT, () => {
+      console.log(`✅ Server is running on http://localhost:${PORT}`);
+      console.log("Allowed origins:", allowedOrigins);
+    });
+  } catch (err) {
+    console.error("❌ Failed to start server:", err);
+    process.exit(1);
+  }
+}
 
-// start();
+start();
 /////////////////////////////////////////////////////////////
 
 // import express from "express";
@@ -224,87 +228,87 @@
 
 // start();
 ////////////////////////////////////////////////////////////////////////////////
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import morgan from "morgan";
-import serverless from "serverless-http";
-import { connectDB } from "./Database/db.js";
+// import express from "express";
+// import cors from "cors";
+// import dotenv from "dotenv";
+// import morgan from "morgan";
+// import serverless from "serverless-http";
+// import { connectDB } from "./Database/db.js";
 
-import paystackRouter from "./Routes/paystackroute2.js";
-import artRoutes from "./Routes/artRoutes.js";
-import userRoutes from "./Routes/userRoutes.js";
-import orderRoutes from "./Routes/orderRoutes.js";
-import feedbackRoute from "./Routes/feedbackroute.js";
-import messageRoutes from "./Routes/messageRoute.js";
+// import paystackRouter from "./Routes/paystackroute2.js";
+// import artRoutes from "./Routes/artRoutes.js";
+// import userRoutes from "./Routes/userRoutes.js";
+// import orderRoutes from "./Routes/orderRoutes.js";
+// import feedbackRoute from "./Routes/feedbackroute.js";
+// //import messageRoutes from "./Routes/messageRoute.js";
 
-dotenv.config();
+// dotenv.config();
 
-const app = express();
+// const app = express();
 
-// Allowed origins
-const allowedOrigins = [
-  process.env.FRONTEND_URL,
-  process.env.LOCAL_URL,
-  process.env.ALT_LOCAL_URL,
-].filter(Boolean);
+// // Allowed origins
+// const allowedOrigins = [
+//   process.env.FRONTEND_URL,
+//   process.env.LOCAL_URL,
+//   process.env.ALT_LOCAL_URL,
+// ].filter(Boolean);
 
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true); // allow Postman/curl
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    console.warn("❌ Blocked by CORS:", origin);
-    return callback(null, false);
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-};
+// const corsOptions = {
+//   origin: function (origin, callback) {
+//     if (!origin) return callback(null, true); // allow Postman/curl
+//     if (allowedOrigins.includes(origin)) {
+//       return callback(null, true);
+//     }
+//     console.warn("❌ Blocked by CORS:", origin);
+//     return callback(null, false);
+//   },
+//   credentials: true,
+//   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+//   allowedHeaders: ["Content-Type", "Authorization"],
+// };
 
-// Apply CORS before routes
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+// // Apply CORS before routes
+// app.use(cors(corsOptions));
+// app.options("*", cors(corsOptions));
 
-app.use(express.json());
-app.use(morgan("dev"));
+// app.use(express.json());
+// app.use(morgan("dev"));
 
-// Debug incoming origins
-app.use((req, res, next) => {
-  console.log("🌍 Incoming Origin:", req.headers.origin);
-  console.log("✅ Allowed Origins:", allowedOrigins);
-  next();
-});
+// // Debug incoming origins
+// app.use((req, res, next) => {
+//   console.log("🌍 Incoming Origin:", req.headers.origin);
+//   console.log("✅ Allowed Origins:", allowedOrigins);
+//   next();
+// });
 
-// Health check
-app.get("/", (req, res) => {
-  res.send("Welcome to Unix guys (serverless mode, safe from path-to-regexp)");
-});
+// // Health check
+// app.get("/", (req, res) => {
+//   res.send("Welcome to Unix guys (serverless mode, safe from path-to-regexp)");
+// });
 
-// ✅ Always mount routers with relative paths only
-app.use("/api/art", artRoutes);
-app.use("/api/payments/paystack", paystackRouter);
-app.use("/api/users", userRoutes);
-app.use("/api/orders", orderRoutes);
-app.use("/api/feedback", feedbackRoute);
-app.use("/api/messages", messageRoutes);
+// // ✅ Always mount routers with relative paths only
+// app.use("/api/art", artRoutes);
+// app.use("/api/payments/paystack", paystackRouter);
+// app.use("/api/users", userRoutes);
+// app.use("/api/orders", orderRoutes);
+// app.use("/api/feedback", feedbackRoute);
+// //app.use("/api/messages", messageRoutes);
 
-// Lazy DB connection (serverless-friendly)
-let isConnected = false;
-app.use(async (req, res, next) => {
-  if (!isConnected) {
-    try {
-      await connectDB();
-      isConnected = true;
-      console.log("✅ Database connected");
-    } catch (err) {
-      console.error("❌ Database connection failed:", err);
-      return res.status(500).json({ error: "Database connection failed" });
-    }
-  }
-  next();
-});
+// // Lazy DB connection (serverless-friendly)
+// let isConnected = false;
+// app.use(async (req, res, next) => {
+//   if (!isConnected) {
+//     try {
+//       await connectDB();
+//       isConnected = true;
+//       console.log("✅ Database connected");
+//     } catch (err) {
+//       console.error("❌ Database connection failed:", err);
+//       return res.status(500).json({ error: "Database connection failed" });
+//     }
+//   }
+//   next();
+// });
 
-// Export as serverless handler
-export const handler = serverless(app);
+// // Export as serverless handler
+// export const handler = serverless(app);
