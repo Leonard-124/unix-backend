@@ -225,7 +225,6 @@
 // start();
 ////////////////////////////////////////////////////////////////////////////////
 
-// index.js (or keep as server.js)
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -258,7 +257,7 @@ const corsOptions = {
       return callback(null, true);
     }
     console.warn("❌ Blocked by CORS:", origin);
-    return callback(null, false);
+    return callback(new Error("Not allowed by CORS"));
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
@@ -292,8 +291,21 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/feedback", feedbackRoute);
 app.use("/api/messages", messageRoutes);
 
-// Connect DB once before exporting handler
-await connectDB();
+// Lazy DB connection (serverless-friendly)
+let isConnected = false;
+app.use(async (req, res, next) => {
+  if (!isConnected) {
+    try {
+      await connectDB();
+      isConnected = true;
+      console.log("✅ Database connected");
+    } catch (err) {
+      console.error("❌ Database connection failed:", err);
+      return res.status(500).json({ error: "Database connection failed" });
+    }
+  }
+  next();
+});
 
 // Export as serverless handler
 export const handler = serverless(app);
