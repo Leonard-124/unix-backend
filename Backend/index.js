@@ -23,6 +23,7 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
   process.env.LOCAL_URL,
   process.env.ALT_LOCAL_URL,
+  process.env.NATIVE_URL
 ].filter(Boolean); // removes undefined
 
 app.use(
