@@ -111,7 +111,7 @@ export const getOrderById = async (req, res) => {
     }
 
     // Verify ownership
-    if (order.auth0Id !== auth0Id) {
+    if (order.auth0Id !== auth0Id) { /// Only allow users to view their own orders
       return res.status(403).json({ 
         success: false, 
         message: "Forbidden: You can only view your own orders" 

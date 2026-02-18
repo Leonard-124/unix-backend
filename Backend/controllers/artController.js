@@ -3,6 +3,12 @@
 // import Art from "../Models/artModel.js";
 // import cloudinary from "../config/cloudinary.js";
 
+
+// // At the top of artController.js, add this helper:
+// const ADMIN_IDS = (process.env.ADMIN_AUTH0_IDS || "").split(",").map(id => id.trim());
+
+// const isAdmin = (auth0Id) => ADMIN_IDS.includes(auth0Id);
+
 // // CREATE
 // export const createArt = async (req, res) => {
 //   console.log("req.file:", req.file);
@@ -30,10 +36,10 @@
 //     } = req.body;
 
 //     // ✅ Use req.auth.sub (set by express-oauth2-jwt-bearer)
-//     const auth0Id = req.auth?.sub;
-//     if (!auth0Id) {
-//       return res.status(401).json({ error: "Unauthorized: no auth0Id" });
-//     }
+//     // const auth0Id = req.auth?.sub;
+//     // if (!auth0Id) {
+//     //   return res.status(401).json({ error: "Unauthorized: no auth0Id" });
+//     // }
 
 //     const newArt = new Art({
 //       image: uploadResult.secure_url,
@@ -170,190 +176,186 @@
 //     res.status(500).json({ message: "Server error fetching user artworks" });
 //   }
 // };
-/////////////////////////////////////////////////////////////////
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+import fs from "fs";
 import Art from "../Models/artModel.js";
 import cloudinary from "../config/cloudinary.js";
-import fs from "fs";
+import dotenv from "dotenv"
 
-// CREATE new art
+dotenv.config()
+
+// ─── Admin bypass ────────────────────────────────────────────────────────────
+// Add your Auth0 user ID(s) to .env:  ADMIN_AUTH0_IDS=auth0|abc,auth0|xyz
+const ADMIN_IDS = (process.env.ADMIN_AUTH0_IDS || "").split(",").map(id => id.trim()).filter(Boolean);
+const isAdmin = (auth0Id) => ADMIN_IDS.includes(auth0Id);
+
+// ─── CREATE ──────────────────────────────────────────────────────────────────
 export const createArt = async (req, res) => {
+  console.log("req.file:", req.file);
+  console.log("req.body:", req.body);
+
   try {
-    console.log("Request body:", req.body);
-    console.log("Request file:", req.file);
-    console.log("req.auth:", req.auth);
-    console.log("req.user:", req.user);
-
-    // Get auth0Id from token
-    const auth0IdFromToken = req.auth?.payload?.sub || req.user?.sub;
-    const auth0IdFromBody = req.body.auth0Id;
-
-    if (!auth0IdFromToken) {
-      return res.status(401).json({ error: "Unauthorized: no token" });
-    }
-
-    // Verify the auth0Id matches
-    if (auth0IdFromBody && auth0IdFromBody !== auth0IdFromToken) {
-      return res.status(403).json({ error: "Forbidden: auth0Id mismatch" });
-    }
-
     if (!req.file) {
-      return res.status(400).json({ error: "Image is required" });
+      return res.status(400).json({ error: "Image file is required" });
+    }
+
+    // ✅ Extract auth0Id from token (was commented out, causing ReferenceError)
+    const auth0Id = req.auth?.payload?.sub || req.auth?.sub;
+    if (!auth0Id) {
+      return res.status(401).json({ error: "Unauthorized: no auth0Id" });
     }
 
     // Upload to Cloudinary
-    const result = await cloudinary.uploader.upload(req.file.path, {
-      folder: "unix_artworks",
+    const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+      folder: "artworks",
     });
 
-    // Delete temp file
+    // ✅ Clean up temp file
     fs.unlinkSync(req.file.path);
 
-    // Parse quantity
-    const quantity = parseInt(req.body.quantity) || 1;
+    const {
+      name,
+      personType,
+      personName,
+      size,
+      weight,
+      type,
+      description,
+      price,
+      quantity,
+    } = req.body;
 
-    // Create art document
-    const art = await Art.create({
-      image: result.secure_url,
-      publicId: result.public_id,
-      name: req.body.name,
-      author: req.body.author,
-      inventor: req.body.inventor,
-      size: req.body.size,
-      weight: req.body.weight,
-      type: req.body.type,
-      description: req.body.description,
-      price: req.body.price,
-      quantity: quantity,
-      auth0Id: auth0IdFromToken, // Use auth0Id from token
+    const newArt = new Art({
+      image: uploadResult.secure_url,
+      publicId: uploadResult.public_id,
+      name,
+      author: personType === "author" ? personName : undefined,
+      inventor: personType === "inventor" ? personName : undefined,
+      size,
+      weight,
+      type,
+      description,
+      price,
+      quantity: parseInt(quantity) || 1,
+      auth0Id, // ✅ now correctly set
     });
 
-    res.status(201).json(art);
-  } catch (error) {
-    console.error("Error creating art:", error);
-    
-    // Clean up temp file if it exists
+    const savedArt = await newArt.save();
+    res.status(201).json(savedArt);
+  } catch (err) {
+    console.error("Error creating art:", err);
+    // Clean up temp file on error
     if (req.file?.path) {
-      try {
-        fs.unlinkSync(req.file.path);
-      } catch (err) {
-        console.error("Error deleting temp file:", err);
-      }
+      try { fs.unlinkSync(req.file.path); } catch (_) {}
     }
-    
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: err.message });
   }
 };
 
-// READ all art
+// ─── READ ALL ─────────────────────────────────────────────────────────────────
 export const getAllArt = async (req, res) => {
   try {
-    const arts = await Art.find().sort({ createdAt: -1 });
-    res.status(200).json(arts);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    const artworks = await Art.find().sort({ createdAt: -1 });
+    res.json(artworks);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
 
-// READ one art by ID
+// ─── READ ONE ─────────────────────────────────────────────────────────────────
 export const getArtById = async (req, res) => {
   try {
     const art = await Art.findById(req.params.id);
-    if (!art) {
-      return res.status(404).json({ error: "Art not found" });
-    }
-    res.status(200).json(art);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    if (!art) return res.status(404).json({ error: "Not found" });
+    res.json(art);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
 
-// UPDATE art
+// ─── UPDATE ──────────────────────────────────────────────────────────────────
 export const updateArt = async (req, res) => {
   try {
-    const auth0IdFromToken = req.auth?.payload?.sub || req.user?.sub;
-    
+    const auth0IdFromToken = req.auth?.payload?.sub || req.auth?.sub;
     if (!auth0IdFromToken) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
     const art = await Art.findById(req.params.id);
-    
-    if (!art) {
-      return res.status(404).json({ error: "Art not found" });
-    }
+    if (!art) return res.status(404).json({ error: "Not found" });
 
-    // Verify ownership
-    if (art.auth0Id !== auth0IdFromToken) {
+    // ✅ Ownership check with admin bypass
+    if (art.auth0Id !== auth0IdFromToken && !isAdmin(auth0IdFromToken)) {
       return res.status(403).json({ error: "Forbidden: You can only update your own artworks" });
     }
 
-    let updateData = { ...req.body };
+    const {
+      name,
+      personType,
+      personName,
+      size,
+      weight,
+      type,
+      description,
+      price,
+      quantity,
+    } = req.body;
 
-    // If new image uploaded
+    const updates = { name, size, weight, type, description, price };
+    if (quantity) updates.quantity = parseInt(quantity) || 1;
+
+    // If new image uploaded, replace old one on Cloudinary
     if (req.file) {
-      // Delete old image from Cloudinary
       if (art.publicId) {
         await cloudinary.uploader.destroy(art.publicId);
       }
-
-      // Upload new image
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: "unix_artworks",
+      const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+        folder: "artworks",
       });
-
-      updateData.image = result.secure_url;
-      updateData.publicId = result.public_id;
-
-      // Delete temp file
+      // ✅ Clean up temp file
       fs.unlinkSync(req.file.path);
+      updates.image = uploadResult.secure_url;
+      updates.publicId = uploadResult.public_id;
     }
 
-    // Parse quantity if provided
-    if (req.body.quantity) {
-      updateData.quantity = parseInt(req.body.quantity) || 1;
+    if (personType === "author") {
+      updates.author = personName;
+      updates.inventor = undefined;
+    } else if (personType === "inventor") {
+      updates.inventor = personName;
+      updates.author = undefined;
     }
 
-    const updatedArt = await Art.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true, runValidators: true }
-    );
+    const updatedArt = await Art.findByIdAndUpdate(req.params.id, updates, {
+      new: true,
+      runValidators: true,
+    });
 
-    res.status(200).json(updatedArt);
-  } catch (error) {
-    console.error("Error updating art:", error);
-    
-    // Clean up temp file if it exists
+    res.json(updatedArt);
+  } catch (err) {
+    console.error("Error updating art:", err);
     if (req.file?.path) {
-      try {
-        fs.unlinkSync(req.file.path);
-      } catch (err) {
-        console.error("Error deleting temp file:", err);
-      }
+      try { fs.unlinkSync(req.file.path); } catch (_) {}
     }
-    
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: err.message });
   }
 };
 
-// DELETE art
+// ─── DELETE ──────────────────────────────────────────────────────────────────
 export const deleteArt = async (req, res) => {
   try {
-    const auth0IdFromToken = req.auth?.payload?.sub || req.user?.sub;
-    
+    const auth0IdFromToken = req.auth?.payload?.sub || req.auth?.sub;
     if (!auth0IdFromToken) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
     const art = await Art.findById(req.params.id);
-    
-    if (!art) {
-      return res.status(404).json({ error: "Art not found" });
-    }
+    if (!art) return res.status(404).json({ error: "Not found" });
 
-    // Verify ownership
-    if (art.auth0Id !== auth0IdFromToken) {
+    // ✅ Ownership check with admin bypass
+    if (art.auth0Id !== auth0IdFromToken && !isAdmin(auth0IdFromToken)) {
       return res.status(403).json({ error: "Forbidden: You can only delete your own artworks" });
     }
 
@@ -362,33 +364,33 @@ export const deleteArt = async (req, res) => {
       await cloudinary.uploader.destroy(art.publicId);
     }
 
-    await Art.findByIdAndDelete(req.params.id);
-    res.status(200).json({ message: "Art deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    await art.deleteOne();
+    res.json({ message: "Deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting art:", err);
+    res.status(500).json({ error: err.message });
   }
 };
 
-// GET user's artworks
+// ─── READ USER'S ARTWORKS ────────────────────────────────────────────────────
 export const getUserArtworks = async (req, res) => {
+  console.log("req.auth.sub:", req.auth?.sub);
+  console.log("req.params.auth0Id:", req.params.auth0Id);
+
   try {
-    const auth0IdFromToken = req.auth?.payload?.sub || req.user?.sub;
-    const auth0IdFromParam = req.params.auth0Id;
+    const { auth0Id } = req.params;
+    const auth0IdFromToken = req.auth?.payload?.sub || req.auth?.sub;
 
-    if (!auth0IdFromToken) {
-      return res.status(401).json({ error: "Unauthorized" });
+    // ✅ Ownership check with admin bypass
+    if (auth0IdFromToken !== auth0Id && !isAdmin(auth0IdFromToken)) {
+      return res.status(403).json({ message: "Forbidden: not your profile" });
     }
 
-    // Verify user is requesting their own artworks
-    if (auth0IdFromParam !== auth0IdFromToken) {
-      return res.status(403).json({ error: "Forbidden: You can only view your own artworks" });
-    }
-
-    const artworks = await Art.find({ auth0Id: auth0IdFromToken }).sort({ createdAt: -1 });
+    const artworks = await Art.find({ auth0Id }).sort({ createdAt: -1 });
     res.status(200).json(artworks);
-  } catch (error) {
-    console.error("Error fetching user artworks:", error);
-    res.status(500).json({ error: error.message });
+  } catch (err) {
+    console.error("Error fetching user artworks:", err);
+    res.status(500).json({ message: "Server error fetching user artworks" });
   }
 };
 

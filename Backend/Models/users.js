@@ -35,9 +35,6 @@ const usersSchema = new mongoose.Schema({
     username: {
         type: String
     },
-    fullname: {
-        type: String
-    },
     email: {
         type: String, 
         required: true

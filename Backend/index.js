@@ -46,7 +46,7 @@ app.use(morgan("dev"));
 
 // Health check
 app.get("/", (req, res) => {
-  res.send("Welcome to Unix guys");
+  res.send("Welcome to Unix Arts.");
 });
 
 // Routes

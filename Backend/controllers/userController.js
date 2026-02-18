@@ -78,7 +78,7 @@ import fs from "fs";
 export const createOrUpdateUser = async (req, res) => {
   try {
     // Extract user details from request body or JWT payload
-    const { auth0Id, username, fullname, email } = req.body;
+    const { auth0Id, username, email } = req.body;
 
     if (!auth0Id || !email) {
       return res.status(400).json({ success: false, message: "auth0Id and email are required." });
@@ -89,7 +89,6 @@ export const createOrUpdateUser = async (req, res) => {
       {
         $set: {
           username,
-          fullname,
           email,
         },
         $setOnInsert: {
