@@ -163,7 +163,7 @@ router.post('/initialize', checkJwt, async (req, res) => {
     const auth0Id = req.auth?.payload?.sub || req.user?.sub;
 
     if (!auth0Id) {
-      return res.status(401).json({ error: "Unauthorized" });
+      return res.status(401).json({ error: "Unauthorized, login first!" });
     }
 
     if (!artId) {
