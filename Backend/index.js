@@ -12,6 +12,7 @@ import artRoutes from "./Routes/artRoutes.js";
 import userRoutes from "./Routes/userRoutes.js";
 import orderRoutes from "./Routes/orderRoutes.js";
 import feedbackRoute from "./Routes/feedbackroute.js";
+import paysta from "./Routes/paysta.js"
 import messageRoutes from "./Routes/messageRoute.js"; // ADD THIS
 
 dotenv.config();
@@ -52,6 +53,7 @@ app.get("/", (req, res) => {
 // Routes
 app.use("/api/art", artRoutes);
 app.use("/api/payments/paystack", paystackRouter);
+app.use("/api/payments/paystack/v1", paysta);
 app.use("/api/users", userRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/feedback", feedbackRoute);
