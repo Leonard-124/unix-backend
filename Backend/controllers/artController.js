@@ -188,7 +188,7 @@ dotenv.config()
 
 // ─── Admin bypass ────────────────────────────────────────────────────────────
 // Add your Auth0 user ID(s) to .env:  ADMIN_AUTH0_IDS=auth0|abc,auth0|xyz
-const ADMIN_IDS = (process.env.ADMIN_AUTH0_IDS || process.env.ADMIN2_AUTH0_IDS ||"" ).split(",").map(id => id.trim()).filter(Boolean);
+const ADMIN_IDS = (process.env.ADMIN_AUTH0_ID, process.env.ADMIN2_AUTH0_IDS ||"" ).split(",").map(id => id.trim()).filter(Boolean);
 const isAdmin = (auth0Id) => ADMIN_IDS.includes(auth0Id);
 
 // ─── CREATE ──────────────────────────────────────────────────────────────────
