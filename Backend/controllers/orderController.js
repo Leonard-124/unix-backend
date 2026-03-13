@@ -2,6 +2,12 @@
 import Order from "../Models/Order.js";
 import Art from "../Models/artModel.js";
 
+
+//Admin bypass
+// Add your Auth0 user ID(s) to .env:  ADMIN_AUTH0_IDS=auth0|abc,auth0|xyz
+const ADMIN_IDS = (process.env.ADMIN_AUTH0_ID, process.env.ADMIN2_AUTH0_IDS ||"" ).split(",").map(id => id.trim()).filter(Boolean);
+const isAdmin = (auth0Id) => ADMIN_IDS.includes(auth0Id);
+
 /**
  * Create a new order after successful payment
  */
@@ -111,7 +117,7 @@ export const getOrderById = async (req, res) => {
     }
 
     // Verify ownership
-    if (order.auth0Id !== auth0Id) { /// Only allow users to view their own orders
+    if (order.auth0Id !== auth0Id && !isAdmin(id)) { /// Only allow users/admin to view their own orders
       return res.status(403).json({ 
         success: false, 
         message: "Forbidden: You can only view your own orders" 
