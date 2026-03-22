@@ -238,7 +238,7 @@ export const createArt = async (req, res) => {
       type,
       description,
       price,
-      quantity: parseInt(quantity) || 1,
+      quantity: parseInt(quantity) || 0, //was one
       auth0Id, // ✅ now correctly set
     });
 

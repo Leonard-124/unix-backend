@@ -14,6 +14,7 @@ import orderRoutes from "./Routes/orderRoutes.js";
 import feedbackRoute from "./Routes/feedbackroute.js";
 import paysta from "./Routes/paysta.js"
 import messageRoutes from "./Routes/messageRoute.js"; // ADD THIS
+import personaldetails from "./Routes/personaldetailroutes.js"
 
 dotenv.config();
 
@@ -58,6 +59,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/feedback", feedbackRoute);
 app.use("/api/messages", messageRoutes); // ADD THIS
+app.use("/api/personal_details", personaldetails) // ADDED THIS
 
 // Server start
 const PORT = process.env.PORT || 3000;
@@ -76,6 +78,8 @@ async function start() {
 }
 
 start();
+
+
 /////////////////////////////////////////////////////////////
 
 // import express from "express";
