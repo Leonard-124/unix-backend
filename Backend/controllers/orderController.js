@@ -194,14 +194,14 @@ export const createOrder = async (req, res) => {
       },
       reference,
       amount,
-      quantity: quantity || 1,
-      status: "success",
-      paidAt: new Date(),
-      paymentData,
+      quantity: quantity || 1, // </>
+      status: "success", // </>
+      paidAt: new Date(), // </>
+      paymentData, // </>
     });
 
     if (art.quantity > 0) {
-      art.quantity -= quantity || 1;
+      art.quantity -= quantity || 1; // why
       await art.save();
     }
 

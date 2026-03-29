@@ -5,7 +5,7 @@ import Users from "../Models/users.js";
 export const sendMessage = async (req, res) => {
   try {
     const { recipientId, content, artworkId } = req.body;
-    const senderId = req.auth?.payload?.sub || req.user?.sub;
+    const senderId = req.auth?.payload?.sub || req.user?.sub; //</>
 
     if (!senderId) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
@@ -24,7 +24,6 @@ export const sendMessage = async (req, res) => {
       content,
       artworkId: artworkId || null,
     });
-
     res.status(201).json({ success: true, message });
   } catch (error) {
     console.error("Error sending message:", error);
@@ -48,7 +47,7 @@ export const getConversation = async (req, res) => {
       ],
     })
       .sort({ createdAt: 1 })
-      .populate("artworkId", "name image price");
+      .populate("artworkId", "name image price");   
 
     res.status(200).json({ success: true, messages });
   } catch (error) {

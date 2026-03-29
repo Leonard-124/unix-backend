@@ -356,7 +356,7 @@ export const deleteArt = async (req, res) => {
 
     // ✅ Ownership check with admin bypass
     if (art.auth0Id !== auth0IdFromToken && !isAdmin(auth0IdFromToken)) {
-      return res.status(403).json({ error: "Forbidden: You can only delete your own artworks" });
+      return res.status(403).json({ error: "Forbidden: You can only delete your own artworks or have admin previledge." });
     }
 
     // Delete image from Cloudinary

@@ -42,7 +42,7 @@ export const getOnePersonal = async (req, res) => {
         if(!auth0Id) {
             return res.status(400).json({message: "Not permitted, auth0Id must be provided"})
         }
-        const personal = await personaldetails.findById(auth0Id);
+        const personal = await personaldetails.findById(req.params.id);
         if (!personal) return res.status(404).json({message: "No personal details found"});
         res.status(200).json(personal)
 
@@ -58,7 +58,7 @@ export const updatePersonal = async(req, res) => {
         if (!auth0Id) {
             return res.status(400).json({message: "Invalid auth0Id format"})
         }
-        const updated  = await personaldetails.findByIdAndUpdate(auth0Id, req.body, {
+        const updated  = await personaldetails.findByIdAndUpdate(req.params.id, req.body, {
             new: true,
             runValidators: true,
         });

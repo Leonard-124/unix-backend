@@ -14,9 +14,9 @@ const router = express.Router();
 router.post("/", checkJwt, createOrder);
 
 // GET all orders for authenticated user
-router.get("/", checkJwt, getUserOrders);
+router.get("/", checkJwt, getUserOrders);//<All
 
 // GET single order by ID
-router.get("/:id", checkJwt, getOrderById);
+router.get("/:id", checkJwt, getOrderById); //<single/>
 
 export default router

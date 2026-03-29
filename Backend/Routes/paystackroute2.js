@@ -178,8 +178,8 @@ router.post('/initialize', checkJwt, async (req, res) => {
         email, 
         amount: paystackAmount,
         metadata: {
-          auth0Id,
-          artId,
+          auth0Id, //</>
+          artId, //</>
           quantity: quantity || 1,
         }
       },

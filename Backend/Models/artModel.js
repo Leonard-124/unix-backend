@@ -36,7 +36,7 @@ const artSchema = new mongoose.Schema(
     description: { type: String },
     price: { type: String },
     quantity: { type: Number, default: 1 }, // Quantity available
-    auth0Id: { type: String, required: true }
+    auth0Id: { type: String, required: true } //For every user's auth
   },
   { timestamps: true }
 );

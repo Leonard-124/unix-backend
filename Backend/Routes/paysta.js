@@ -1,6 +1,4 @@
 
-
-
 import express from 'express';
 import axios from 'axios';
 
@@ -11,7 +9,7 @@ const router = express.Router();
 router.post('/initialize', async (req, res) => {
 try {
 const { email, amount } = req.body;
-const paystackAmount = Math.round(amount * 100);
+const paystackAmount = Math.round(amount * 100);//
 
 
 const initRes = await axios.post(
@@ -100,13 +98,13 @@ const paymentData = verifyRes.data.data;
 
 if (paymentData.status === 'success') {
 console.log('✅ Payment verified on callback:', paymentData);
-return res.redirect(`https://unix-delta.vercel.app/success?reference=${reference}`);
+return res.redirect(`https://unixart.art/success?reference=${reference}`);
 } else {
-return res.redirect(`https://unix-delta.vercel.app/payment-failed?reference=${reference}`);
+return res.redirect(`https://unixart.art/payment-failed?reference=${reference}`);
 }
 } catch (err) {
 console.error('Callback error:', err.message);
-return res.redirect('https://unix-delta.vercel.app/payment-failed');
+return res.redirect('https://unixart.art/payment-failed');
 }
 });
 

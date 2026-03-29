@@ -10,7 +10,7 @@ const personalSchema = new mongoose.Schema({
         require: true,
     },
     address:{
-        type:String,
+        type: String,
         required:true,
     },
     country: {
