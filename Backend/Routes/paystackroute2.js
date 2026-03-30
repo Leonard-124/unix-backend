@@ -259,7 +259,7 @@ router.post('/webhook', express.json({ type: '*/*' }), async (req, res) => {
 
                 // Update art quantity
                 if (art.quantity > 0) {
-                  art.quantity -= quantity || 1;
+                  art.quantity -= quantity || 1; //why?
                   await art.save();
                 }
 
